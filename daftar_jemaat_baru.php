@@ -86,7 +86,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     die("Koneksi gagal: " . mysqli_connect_error());
                 }
 
-                // Sanitasi input
                 $tanggal = mysqli_real_escape_string($conn, $tanggal);
                 $nama_jemaat = mysqli_real_escape_string($conn, $nama_jemaat);
                 $asal_gereja = mysqli_real_escape_string($conn, $asal_gereja);
