@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Formulir Daftar Jemaat Baru</title>
-  <!-- Bootstrap CSS CDN -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
     body {
@@ -22,7 +21,7 @@
 </head>
 <body>
   <div class="container-sm">
-    <form action="#" method="post" enctype="multipart/form-data" id="myForm" class="bg-primary text-white p-5 rounded-lg shadow-lg">
+    <form action="daftar_jemaat_baru.php" method="post" enctype="multipart/form-data" id="myForm" class="bg-primary text-white p-5 rounded-lg shadow-lg">
       <h2 class="text-white">Formulir Daftar Jemaat Baru</h2>
 
       <div class="form-group">
@@ -46,8 +45,8 @@
       </div>
 
       <div class="form-group">
-        <label for="dokumen" class="bold-label">Upload Dokumen:</label>
-        <input type="file" class="form-control-file" id="dokumen" name="dokumen" accept=".pdf,.jpg,.jpeg,.png" required>
+        <label for="dokumen" class="bold-label">Upload Dokumen (PDF, JPG, JPEG, PNG):</label>
+        <input type="file" class="form-control-file bg-white text-dark" id="dokumen" name="dokumen" accept=".pdf,.jpg,.jpeg,.png" required>
       </div>
 
       <div class="row justify-content-between">
@@ -56,48 +55,69 @@
           <input type="reset" class="btn btn-danger rounded-pill px-3 shadow-lg" value="Batal" onclick="resetForm();">
         </div>
         <div class="col-auto">
-          <a href="index.php" class="btn text-white fw-medium rounded-pill px-3">Kembali</a>
+          <a href="index.php" class="btn btn-warning text-white fw-medium rounded-pill px-3">Kembali</a>
         </div>
       </div>
 
       <?php
-      if ($_SERVER["REQUEST_METHOD"] == "POST") {
-          $tanggal = $_POST["tanggal"];
-          $nama_jemaat = $_POST["nama_jemaat"];
-          $asal_gereja = $_POST["asal_gereja"];
-          $ttl = $_POST["ttl"];
-          $upload_folder = "uploads/";
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $tanggal = $_POST["tanggal"];
+    $nama_jemaat = $_POST["nama_jemaat"];
+    $asal_gereja = $_POST["asal_gereja"];
+    $ttl = $_POST["ttl"];
 
-          // Handle file upload
-          $file_name = basename($_FILES["dokumen"]["name"]);
-          $target_path = $upload_folder . $file_name;
-          $file_type = strtolower(pathinfo($target_path, PATHINFO_EXTENSION));
+    $uploadDir = "uploads/";
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
 
-          if (move_uploaded_file($_FILES["dokumen"]["tmp_name"], $target_path)) {
-              $conn = mysqli_connect('localhost', 'root', '', 'database_gereja');
-              if ($conn->connect_error) {
-                  die("Connection failed: " . $conn->connect_error);
-              }
+    if (isset($_FILES["dokumen"]) && $_FILES["dokumen"]["error"] === 0) {
+        $fileName = basename($_FILES["dokumen"]["name"]);
+        $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $allowedTypes = ["pdf", "jpg", "jpeg", "png"];
 
-              $sql = "INSERT INTO daftar_baptis (tanggal, nama_jemaat, asal_gereja, ttl, dokumen_path)
-                      VALUES ('$tanggal', '$nama_jemaat', '$asal_gereja', '$ttl', '$target_path')";
+        if (in_array($fileType, $allowedTypes)) {
+            $uniqueFileName = time() . "_" . rand(1000, 9999) . "_" . $fileName;
+            $targetPath = $uploadDir . $uniqueFileName;
 
-              if (mysqli_query($conn, $sql)) {
-                  echo "<script>alert('Data berhasil disimpan.');</script>";
-              } else {
-                  echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
-              }
+            if (move_uploaded_file($_FILES["dokumen"]["tmp_name"], $targetPath)) {
+                $conn = mysqli_connect('localhost', 'root', '', 'aplikasiakuntansi');
+                if (!$conn) {
+                    die("Koneksi gagal: " . mysqli_connect_error());
+                }
 
-              mysqli_close($conn);
-          } else {
-              echo "<script>alert('Gagal mengunggah dokumen.');</script>";
-          }
-      }
-      ?>
+                // Sanitasi input
+                $tanggal = mysqli_real_escape_string($conn, $tanggal);
+                $nama_jemaat = mysqli_real_escape_string($conn, $nama_jemaat);
+                $asal_gereja = mysqli_real_escape_string($conn, $asal_gereja);
+                $ttl = mysqli_real_escape_string($conn, $ttl);
+                $targetPath = mysqli_real_escape_string($conn, $targetPath);
+
+                $sql = "INSERT INTO daftar_jemaat_baru (tanggal, nama_jemaat, asal_gereja, ttl, dokumen_path)
+                        VALUES ('$tanggal', '$nama_jemaat', '$asal_gereja', '$ttl', '$targetPath')";
+
+                if (mysqli_query($conn, $sql)) {
+                    echo "<script>alert('Data berhasil disimpan.');</script>";
+                } else {
+                    echo "<script>alert('Gagal menyimpan ke database: " . mysqli_error($conn) . "');</script>";
+                }
+
+                mysqli_close($conn);
+            } else {
+                echo "<script>alert('Gagal mengunggah file.');</script>";
+            }
+        } else {
+            echo "<script>alert('Jenis file tidak diperbolehkan. Hanya PDF, JPG, JPEG, PNG.');</script>";
+        }
+    } else {
+        echo "<script>alert('Tidak ada file yang diunggah atau terjadi kesalahan.');</script>";
+    }
+}
+?>
     </form>
   </div>
 
-  <!-- Bootstrap JS and Popper.js -->
+  <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
